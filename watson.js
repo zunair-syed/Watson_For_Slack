@@ -39,7 +39,7 @@ module.exports = class Watson {
 
         watsonVisual.classify({url:source.file.permalink_public})
             .then((res) => {
-                console.log("res: " + JSON.stringify(res, null, 4));
+                console.log("From Classify API: " + JSON.stringify(res, null, 4));
 
                 var classes = res.images[0].classifiers[0].classes;
                 var classMessage = "";
@@ -62,7 +62,7 @@ module.exports = class Watson {
 
         watsonVisual.detectFaces({url:source.file.permalink_public})
             .then((res2) => {
-                console.log("got here res2: " + JSON.stringify(res2, null, 4));
+                console.log("From Detect Faces API: " + JSON.stringify(res2, null, 4));
                 if(!res2.images[0].faces || res2.images[0].faces.length == 0){
                     console.log("no face detected");
                     return;
@@ -91,15 +91,12 @@ module.exports = class Watson {
                     var saidMale = false;
                     var saidFemale = false;
                     var ageGroups = []
+
                     faces.forEach((face) => {
+
                         if(face.age && (face.age.min || face.age.max) && face.age.score > 0.30){
                             if(!face.age.min){face.age.min = "middle-age"}
                             if(!face.age.max){face.age.max = "middle-age"}
-
-                            console.log("face.age.min + to  + face.age.max: " + face.age.min + " to " + face.age.max);
-                            console.log("ageGroup:" + ageGroups);
-                            console.log("!(ageGroups.indexOf(face.age.min + to + face.age.max) >= 0)" + (!(ageGroups.indexOf(face.age.min + " to " + face.age.max)) >= 0));
-
                             if(!(ageGroups.indexOf(face.age.min + " to " + face.age.max) >= 0)){
                                 ageGroups.push(face.age.min + " to " + face.age.max);
                                 if(ageString == "")
@@ -110,18 +107,14 @@ module.exports = class Watson {
                         }
 
                         if(face.gender && face.gender.score > 0.75 && face.gender.gender){
-
                             if(genderString == "")
                                 genderString = "\n There seems to be " + face.gender.gender.toLowerCase()
                             else if((face.gender.gender.toLowerCase() == "male") && !saidMale)
                                 genderString += " and male"
                             else if((face.gender.gender.toLowerCase() == "female") && !saidFemale)
                                 genderString += " and female"
-
-
                             if(face.gender.gender.toLowerCase() == "male"){saidMale = true}
                             if(face.gender.gender.toLowerCase() == "female"){saidFemale = true}
-
                         }
 
                         if(face.identity && face.identity.score > 0.4 && face.identity.name){
@@ -129,26 +122,16 @@ module.exports = class Watson {
                                 identityString = "\n There is *" + face.identity.name + "* ";
                             else
                                 identityString += " and *" + face.identity.name + "*.";
-
-                            console.log("11 identityString:" + identityString);
-
                         }
-                        console.log("face: " + JSON.stringify(face))
                     })
                 }
-                console.log("22 identityString:" + identityString);
-
                 this.slackbot.say(ageString + genderString + identityString + ". ", source.file.groups[0] )
 
                 var trueFileName = filename.split("/")[filename.split("/").length - 1].split(".")[0]
-                console.log("tru File Name: " + trueFileName);
                 var allFaces = [];
                 faces.forEach((face) => {
                     if(face.face_location) {allFaces.push(face.face_location)}
                 })
-                console.log("allFaces: " + JSON.stringify(allFaces, null, 4));
-                console.log("filename: " +  filename );
-
                 return this.createFaceRectangles(filename, trueFileName, allFaces)
             }, (err2) => {
                 console.log("err2 was " + err2)
@@ -181,15 +164,11 @@ module.exports = class Watson {
                     if(member.profile.real_name && allText.includes(member.real_name)) {usrMentionArr.push(member.id);}
                     if(member.profile.last_name && allText.includes(member.last_name)) {usrMentionArr.push(member.id);}
                 })
-                console.log("usrMentionArr: " + JSON.stringify(usrMentionArr));
                 var uniqUsrArr = Array.from(new Set(usrMentionArr));
-                console.log("uniqUsrArr: " + JSON.stringify(uniqUsrArr));
                 var mentionStr = "";
                 uniqUsrArr.forEach((usr) => {
                     mentionStr += "*<@" + usr + ">*, "
                 })
-
-                console.log("message: " + JSON.stringify(message, null, 4));
 
                 this.slackbot.say("Hey " + mentionStr + " You might wanna check this out", source.file.groups[0] )
 
