@@ -1,0 +1,22 @@
+{
+  "name": "template_nodejs",
+  "version": "1.0.0",
+  "description": "zunair's template for starting nodejs project",
+  "main": "app.js",
+  "scripts": {
+    "test": "node app.js"
+  },
+  "author": "zunair syed (zunair.syed@uwaterloo.ca)",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.17.0",
+    "botkit": "^0.5.1",
+    "canvas": "^1.6.4",
+    "download-file": "^0.1.5",
+    "express": "^4.15.0",
+    "image-min": "^0.3.2",
+    "request": "^2.80.0",
+    "uuid": "^3.0.1",
+    "watson-developer-cloud": "^2.25.0"
+  }
+}

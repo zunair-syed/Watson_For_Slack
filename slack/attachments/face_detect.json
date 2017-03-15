@@ -1,0 +1,8 @@
+[
+    {
+        "fallback": "Picture with faces detected using IBM Watson",
+        "title": "*Faces Detected*",
+        "image_url": "",
+        "color": "#764FA5"
+    }
+]
