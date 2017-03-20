@@ -3,19 +3,29 @@
 let Bot = require('./slack/slack.js');
 var watsonVisual = require('./watson_services/visual_recognition.js');
 var watsonDocument = require('./watson_services/document_conversion.js');
+var watsonTranslate = require('./watson_services/language_translator.js');
+var watsonToSpeech = require('./watson_services/text_to_speech.js');
+var watsonToText = require('./watson_services/speech_to_text.js');
+
 var fs = require('fs');
 var util = require('./util/util')
 var config = require('./util/config')
 var request = require('request');
 var Canvas = require('canvas');
 var face_detect_attach = require("./slack/attachments/face_detect.json");
+var video = require('./util/video.js')
+
 const SERVER_URL = "https://77aa0ceb.ngrok.io/"
+const ACTION_TRANSLATE_PREV_MSG = "TRANSLATE_PREV_MSG";
+const ACTION_TO_SPEECH = "TO_SPEECH";
 
 module.exports = class Watson {
     constructor() {
         console.log("watson bot being init");
         this.slackbot = new Bot(this);
         this.slackbot.initializeClient((cb) => {console.log(cb)})
+        // this.addSpeechAnalysis("");
+        // this.slackbot.uploadVideo("/Users/zunairsyed/Documents/Waterloo_CE/Side_Projects/watson_slack/watson_for_slack/slack/slack_downloads/obama.srt", "G4D4UTNBB")
     }
 
     direct_message(message){
@@ -25,7 +35,21 @@ module.exports = class Watson {
 
     direct_mention(message){
         console.log("message was " + JSON.stringify(message));
+        // var f = "/Users/zunairsyed/Documents/Waterloo_CE/Side_Projects/watson_slack/watson_for_slack/public/slack_uploads/F4LBD5M5Z_obama.mp4"
+        // this.slackbot.uploadFile(message, f);
 
+        var intention = this.getIntentionOfMsg(message);
+        switch (intention) {
+            case ACTION_TRANSLATE_PREV_MSG:
+                this.translatePrevMessage(message);
+                break;
+            case ACTION_TO_SPEECH:
+                this.toSpeechPrevMessage(message);
+                break;
+            default:
+                console.log("default case")
+                break;
+        }
     }
 
     image_analysis(message, filename, source){
@@ -201,6 +225,138 @@ module.exports = class Watson {
         })
     }
 
+
+    translatePrevMessage(message){
+        var lastMsg = null;
+        this.slackbot.getlastMSG(message)
+            .then((msg) => {
+                lastMsg = msg;
+                console.log(JSON.stringify(msg))
+                return watsonTranslate.identify(msg.text);
+            }, (err) => {
+                console.log("err in translating prev message: " + err);
+            })
+            .then((language_res) => {
+                console.log("langaue res:" + JSON.stringify(language_res));
+                if(!language_res || !language_res.languages || language_res.languages.length == 0){
+                    console.log("err no lanauges response api");
+                    return;
+                }
+
+                var source = language_res.languages[0].language;
+                if(source == "en"){
+                    console.log("cannot convert from english to english")
+                    this.slackbot.say("I'm sorry, but <@"+lastMsg.user+"> wrote that in english already", message.channel )
+                    return;
+                }else{
+                    return watsonTranslate.translate(lastMsg.text, source, "en");
+                }
+
+            }, (err) => {
+                console.log("err in api call identify lang");
+            })
+            .then((trans_res) => {
+                console.log("trans_res res:" + JSON.stringify(trans_res));
+                if(!trans_res || !trans_res.translations || trans_res.translations.length == 0){
+                    console.log("err no translation response api");
+                    return;
+                }
+                var translation = trans_res.translations[0].translation;
+                this.slackbot.say("<@"+lastMsg.user+"> said _'" + translation + "'_", message.channel )
+            }, (err) => {
+                console.log("err in translating: " + err)
+            })
+    }
+
+    toSpeechPrevMessage(message){
+        var lastMsg = null;
+        this.slackbot.getlastMSG(message)
+            .then((msg) => {
+                lastMsg = msg;
+                console.log(JSON.stringify(msg))
+                return watsonToSpeech.convert(msg.text);
+            }, (err) => {
+                console.log("err in geting last message");
+            })
+            .then((fullpath) => {
+                console.log("fullpath: " + fullpath)
+                return this.slackbot.uploadFile(message, fullpath);
+            }, (err) => {
+                console.log("err in translating prev message: " + err);
+            })
+    }
+
+
+    getIntentionOfMsg(message){
+        if(message.text.includes("translate")){
+            return ACTION_TRANSLATE_PREV_MSG;
+        }else if(message.text.includes("to speech")){
+            return ACTION_TO_SPEECH;
+        }
+    }
+
+
+    addSpeechAnalysis(message, file_name, source){
+        //1) Download the slack video to slack/slack_downloads
+        //2) Extract the wav file from the video, save in slack/slack_downloads
+        //3) Send wav file to watson, Parse response
+        //4) Convert response to srt, save srt in public/slack_uploads
+        //5) Attach srt to video
+        //6) post video onto slack
+
+        var name = (file_name.split("/")[file_name.split("/").length - 1]).split(".")[file_name.split(".").length - 2];
+        var extension = "."+file_name.split(".")[file_name.split(".").length - 1];
+        var pathToVid = file_name.split(name)[0]
+
+        console.log("pathToVid: " + pathToVid);
+        console.log("name: " + name);
+        console.log("extension: " + extension);
+
+        video.extractAudio(pathToVid, name, extension)
+            .then(() => {
+                console.log("extracted audio");
+                this.slackbot.say("_Proccessing *10%* Done_", source.file.groups[0])
+                return watsonToText.getSpeechText(pathToVid, name);
+            }, (err) => {
+                console.log("err in extracting audio: " + err)
+            })
+            .then((json) => {
+                console.log("getSpeechText done");
+                console.log("json :" + JSON.stringify(json, null, 4));
+                this.slackbot.say("_Proccessing *65%* Done_", source.file.groups[0])
+
+                return watsonToText.toSRTFormat(json);
+            }, (text_err) => {
+                console.log("err in watson speech: " + text_err);
+            })
+            .then((srtString) => {
+                console.log("toSRTFormat done");
+                console.log("srtString :" + srtString);
+
+                return watsonToText.saveSRTFile(pathToVid, name, srtString);
+            }, (srtFortmatErr) => {
+                console.log("err in srtFormatting: " + srtFortmatErr)
+            })
+            .then(() => {
+                console.log("saveSRTFile done");
+                var writePath = __dirname + "/public/slack_uploads/"
+                return video.attachSrt(pathToVid, name, extension, writePath)
+            }, (saveSRTErr) => {
+                console.log("err in savingSRT: " + saveSRTErr)
+            })
+            .then((fullpath) => {
+                console.log("fullpath: " + fullpath);
+                this.slackbot.say("_Proccessing *90%* Done _", source.file.groups[0])
+
+                // setTimeout( () => {
+                    this.slackbot.uploadVideo(fullpath, source.file.groups[0]);
+                // }, 5000);
+            }, (attachSrtErr) => {
+                console.log("err in attachSrtErr: " + attachSrtErr)
+            })
+
+
+    }
 
 
 }

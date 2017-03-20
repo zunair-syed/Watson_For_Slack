@@ -6,7 +6,11 @@ var adminModule = require('./api/admin.js');
 var registerModule = require('./api/register.js');
 var watson = require('./watson')
 
-var document_conversion = require('./watson_services/document_conversion')
+// var video = require('./util/video');
+// video.addSubtitles("", () => {});
+// video.extractAudio();
+// var speech_to_text = require('./watson_services/speech_to_text')
+
 
 var app = express();
 watson = new watson();

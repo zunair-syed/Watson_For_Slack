@@ -5,9 +5,11 @@ let config = require('../util/config.js');
 const sharedPublicUrl = "https://slack.com/api/files.sharedPublicURL";
 var request = require('request');
 var util = require('../util/util');
+var fs = require('fs');
 
 const FILE_DOCUMENT = ["docx", "doc", "pdf", "html"]
 const FILE_IMG = ["jpg", "png", "gif", "bmp", "jpeg"];
+const FILE_VIDEO = ["mp4", "mkv"];
 
 module.exports = class SlackBot {
     constructor(watson) {
@@ -57,7 +59,7 @@ module.exports = class SlackBot {
                 body = util.isJson(body) ? JSON.parse(body) : null ;
 
                 console.log("body: " + JSON.stringify(body, null, 4));
-                if(!err && body && body.file.filetype){
+                if(!err && body && !body.error && body.file.filetype){
                     this.saveFileToFolder(body)
                         .then((filename) => {
                             if(FILE_IMG.indexOf(body.file.filetype) > -1){
@@ -66,6 +68,8 @@ module.exports = class SlackBot {
                             }else if(FILE_DOCUMENT.indexOf(body.file.filetype) > -1){
                                 console.log("document file");
                                 this.watson.document_analysis(message, filename, body);
+                            }else if(FILE_VIDEO.indexOf(body.file.filetype) > -1){
+                                this.watson.addSpeechAnalysis(message, filename, body)
                             }else{
                                 console.log("file type " + body.file.filetype + " not supported");
                             }
@@ -119,6 +123,56 @@ module.exports = class SlackBot {
                 else{resolve(res)}
             });
         })
+    }
+
+    getlastMSG(message){
+        return new Promise((resolve, reject) => {
+            this.bot.api.groups.history(
+                {
+                    token: config.slack_access_token,
+                    channel:message.channel,
+                    count:2
+                }, (err, res) => {
+                if(err){reject(err)}
+                else if(!res || !(res.messages) || res.messages.length == 0){reject("err something went wrong api call")}
+                else{resolve(res.messages[1])}
+            });
+        })
+    }
+
+    uploadFile(message, fullpath){
+        console.log("from slack upload file method: " + fullpath);
+        this.bot.api.files.upload({
+             title: "some file",
+             filetype: "auto",
+             file: fs.createReadStream(fullpath),
+             channels: message.channel
+           }, function(err, response) {
+             if (err) {
+               console.log("Error (files.upload) " + err);
+             } else {
+               console.log("Success (files.upload) " + response);
+             };
+       });
+    }
+
+
+    uploadVideo(fullpath, channel){
+        console.log("from slack upload file method: " + fullpath);
+        console.log("from slack upload file method: " + channel);
+
+        this.bot.api.files.upload({
+             title: "Your video with subtitles",
+             filetype: "auto",
+             file: fs.createReadStream(fullpath),
+             channels: channel
+           }, function(err, response) {
+             if (err) {
+               console.log("Error (files.upload) " + err);
+             } else {
+               console.log("Success (files.upload) " + response);
+             };
+       });
     }
 
 }

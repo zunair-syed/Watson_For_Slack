@@ -1,0 +1,5 @@
+applications:
+- name: watsonslackdemo
+  path: .
+  command: npm start
+  memory: 2048M
