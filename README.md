@@ -12,13 +12,13 @@ Four main features:
   1) **Document Conversion** - Use Watson to convert a PDF, HTML, DOC, DOCX to recognize important information like recognizing any slack users in the document. If any slack user's name is in the document, watson will mention there name, so that the person can get a notification that they have been in a document. 
    
   
-[![Video Demo At https://www.youtube.com/watch?v=GKFw95QT0qo](/readme_files/visual_recognition_file_pic.png
-)](https://www.youtube.com/watch?v=GKFw95QT0qo "Video Demo At https://www.youtube.com/watch?v=GKFw95QT0qo")
+[![Video Demo At https://www.youtube.com/watch?v=6ZL4La26S8Q](/readme_files/visual_recognition_file_pic.png
+)](https://www.youtube.com/watch?v=6ZL4La26S8Q "Video Demo At https://www.youtube.com/watch?v=6ZL4La26S8Q")
 
  
 [![Video Demo At https://www.youtube.com/watch?v=GKFw95QT0qo](/readme_files/translation_file_pic.png
 )](https://www.youtube.com/watch?v=GKFw95QT0qo "Video Demo At https://www.youtube.com/watch?v=GKFw95QT0qo")
 
-[![Video Demo At https://youtu.be/RO_IaMczGgA](/readme_files/to_speech_file_pic.png
-)](https://www.youtube.com/watch?v=GKFw95QT0qo "Video Demo At https://youtu.be/RO_IaMczGgA")
+[![Video Demo At https://www.youtube.com/watch?v=RO_IaMczGgA&t=1s](/readme_files/to_speech_file_pic.png
+)](https://www.youtube.com/watch?v=RO_IaMczGgA&t=1s "Video Demo At https://www.youtube.com/watch?v=RO_IaMczGgA&t=1s")
 
