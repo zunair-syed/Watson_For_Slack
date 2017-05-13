@@ -1,4 +1,4 @@
-# Watson Powered Slack Bot
+# IBM Watson Powered Slack Bot
 
 ## Features
 Five main features: 
